@@ -23,6 +23,6 @@ cd C:\Servers\ForgeServer
 .\wmcr.exe @user_jvm_args.txt @libraries/net/minecraftforge/forge/1.20.1-47.4.22/win_args.txt --nogui
 ```
 
-When Java exits successfully, the launcher stops. After a failed exit, it copies the crash reports and `logs\latest.log` into a uniquely named directory under `backups`, waits five seconds, and starts the server again. The backup directory remains alongside the server files.
+When Java exits successfully, the launcher stops. After a failed exit, it copies the crash reports and `logs\latest.log` into a uniquely named directory under `backups`. If Java ran for less than five minutes, the launcher exits with an error instead of retrying. Otherwise, it waits five seconds and starts the server again. The backup directory remains alongside the server files.
 
 Press Ctrl+C to interrupt the Java server and stop the launcher without restarting it.

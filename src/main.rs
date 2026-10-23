@@ -4,13 +4,14 @@ use std::env;
 use std::error::Error;
 use std::process::Command;
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use log::{error, info, warn};
 
 mod backup;
 
 const RESTART_DELAY: Duration = Duration::from_secs(5);
+const MIN_SERVER_UPTIME: Duration = Duration::from_mins(5);
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -44,10 +45,12 @@ fn run() -> Result<(), Box<dyn Error>> {
             break;
         }
 
+        let started_at = Instant::now();
         let status = Command::new("java")
             .args(&java_args)
             .current_dir(&server_dir)
             .status()?;
+        let uptime = started_at.elapsed();
 
         if interrupt_rx.try_recv().is_ok() {
             info!("Ctrl+C received; Minecraft server stopped.");
@@ -63,6 +66,16 @@ fn run() -> Result<(), Box<dyn Error>> {
         if let Err(error) = backup::logs(&server_dir) {
             error!("Could not save all crash logs: {error}");
         }
+
+        if uptime < MIN_SERVER_UPTIME {
+            return Err(format!(
+                "Minecraft server failed after running for {:.1} seconds (less than the {:.0}-minute minimum); stopping instead of restarting",
+                uptime.as_secs_f64(),
+                MIN_SERVER_UPTIME.as_secs_f64() / 60.0
+            )
+            .into());
+        }
+
         info!(
             "Restarting in {} seconds. Press Ctrl+C to stop.",
             RESTART_DELAY.as_secs()
