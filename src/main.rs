@@ -4,6 +4,7 @@ use std::env;
 use std::error::Error;
 use std::process::Command;
 use std::sync::mpsc;
+use std::thread;
 use std::time::{Duration, Instant};
 
 use log::{error, info, warn};
@@ -39,23 +40,13 @@ fn run() -> Result<(), Box<dyn Error>> {
         return Err(format!("server directory does not exist: {}", server_dir.display()).into());
     }
     info!("Starting Minecraft server in {}", server_dir.display());
-    loop {
-        if interrupt_rx.try_recv().is_ok() {
-            info!("Ctrl+C received; stopping launcher.");
-            break;
-        }
-
+    while interrupt_rx.try_recv().is_err() {
         let started_at = Instant::now();
         let status = Command::new("java")
             .args(&java_args)
             .current_dir(&server_dir)
             .status()?;
         let uptime = started_at.elapsed();
-
-        if interrupt_rx.try_recv().is_ok() {
-            info!("Ctrl+C received; Minecraft server stopped.");
-            break;
-        }
 
         if status.success() {
             info!("Minecraft server stopped normally.");
@@ -76,14 +67,8 @@ fn run() -> Result<(), Box<dyn Error>> {
             .into());
         }
 
-        info!(
-            "Restarting in {} seconds. Press Ctrl+C to stop.",
-            RESTART_DELAY.as_secs()
-        );
-        if interrupt_rx.recv_timeout(RESTART_DELAY).is_ok() {
-            info!("Ctrl+C received; stopping launcher.");
-            break;
-        }
+        info!("Restarting in {} seconds.", RESTART_DELAY.as_secs());
+        thread::sleep(RESTART_DELAY);
     }
 
     Ok(())
