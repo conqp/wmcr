@@ -10,6 +10,8 @@ Install the Rust toolchain, then run:
 cargo build --release
 ```
 
+On Windows, the MSVC build statically links the C runtime so the launcher does not require `VCRUNTIME140.dll` to be installed on the server. Rebuild the executable with this project configuration before copying it to Windows Server 2019.
+
 Copy `target\release\wmcr.exe` into the Forge server directory beside `user_jvm_args.txt`, then supply the Java arguments from the Forge `run.bat` command:
 
 ```text
