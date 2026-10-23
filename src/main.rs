@@ -2,9 +2,10 @@
 
 use std::env;
 use std::error::Error;
+use std::ffi::OsString;
 use std::io::{self, BufRead, Write};
-use std::path::Path;
-use std::process::{Child, Command, ExitStatus, Stdio};
+use std::path::{Path, PathBuf};
+use std::process::{self, Child, Command, ExitStatus, Stdio};
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -22,7 +23,7 @@ fn main() {
         .init();
     if let Err(error) = run() {
         error!("wmcr: {error}");
-        std::process::exit(1);
+        process::exit(1);
     }
 }
 
@@ -57,7 +58,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn server_directory() -> Result<std::path::PathBuf, Box<dyn Error>> {
+fn server_directory() -> Result<PathBuf, Box<dyn Error>> {
     let server_dir = env::current_exe()?
         .parent()
         .ok_or("could not determine the launcher directory")?
@@ -97,7 +98,7 @@ fn forward_console_input() -> Receiver<String> {
     input_rx
 }
 
-fn spawn_java(java_args: &[std::ffi::OsString], server_dir: &Path) -> Result<Child, io::Error> {
+fn spawn_java(java_args: &[OsString], server_dir: &Path) -> Result<Child, io::Error> {
     let mut command = Command::new("java");
     command
         .args(java_args)
