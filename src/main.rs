@@ -12,7 +12,9 @@ mod backup;
 const RESTART_DELAY: Duration = Duration::from_secs(5);
 
 fn main() {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_timestamp_secs()
+        .init();
     if let Err(error) = run() {
         error!("wmcr: {error}");
         std::process::exit(1);
