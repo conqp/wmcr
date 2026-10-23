@@ -24,3 +24,5 @@ cd C:\Servers\ForgeServer
 ```
 
 When Java exits successfully, the launcher stops. After a failed exit, it copies the crash reports and `logs\latest.log` into a uniquely named directory under `backups`, waits five seconds, and starts the server again. The backup directory remains alongside the server files.
+
+Press Ctrl+C to interrupt the Java server and stop the launcher without restarting it.

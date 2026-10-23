@@ -9,6 +9,7 @@ keywords = ["minecraft", "server", "windows", "restart"]
 categories = ["command-line-utilities"]
 
 [dependencies]
+ctrlc = "3.4"
 env_logger = "0.11"
 log = "0.4"
 

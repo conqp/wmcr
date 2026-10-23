@@ -1,9 +1,10 @@
 //! Launches a Java server process and saves its logs before restarting after a failure.
 
+use std::env;
 use std::error::Error;
 use std::process::Command;
+use std::sync::mpsc;
 use std::time::Duration;
-use std::{env, thread};
 
 use log::{error, info, warn};
 
@@ -22,6 +23,11 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+    let (interrupt_tx, interrupt_rx) = mpsc::channel();
+    ctrlc::set_handler(move || {
+        let _ = interrupt_tx.send(());
+    })?;
+
     let java_args: Vec<_> = env::args_os().skip(1).collect();
     let server_dir = env::current_exe()?
         .parent()
@@ -33,10 +39,20 @@ fn run() -> Result<(), Box<dyn Error>> {
     }
     info!("Starting Minecraft server in {}", server_dir.display());
     loop {
+        if interrupt_rx.try_recv().is_ok() {
+            info!("Ctrl+C received; stopping launcher.");
+            break;
+        }
+
         let status = Command::new("java")
             .args(&java_args)
             .current_dir(&server_dir)
             .status()?;
+
+        if interrupt_rx.try_recv().is_ok() {
+            info!("Ctrl+C received; Minecraft server stopped.");
+            break;
+        }
 
         if status.success() {
             info!("Minecraft server stopped normally.");
@@ -51,7 +67,10 @@ fn run() -> Result<(), Box<dyn Error>> {
             "Restarting in {} seconds. Press Ctrl+C to stop.",
             RESTART_DELAY.as_secs()
         );
-        thread::sleep(RESTART_DELAY);
+        if interrupt_rx.recv_timeout(RESTART_DELAY).is_ok() {
+            info!("Ctrl+C received; stopping launcher.");
+            break;
+        }
     }
 
     Ok(())
